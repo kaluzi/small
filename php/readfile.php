@@ -1,5 +1,5 @@
 <?php
-  // Read a "Past ECOO Contest Page" and save it in a database. Part of a larger project.
+  // Read a "Past ECOO Contest Page" webpage and save it into a database. Part of a larger project.
 
 	function rdfile($file)
 	{
