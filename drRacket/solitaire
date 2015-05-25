@@ -1,0 +1,362 @@
+;;***************************************
+;; Karen Lu (20556077)
+;; CS 135 Fall 2014
+;; Assignment 10 Problem 2 (peg solitaire)
+;;***************************************
+;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; A Dimension is an Int
+;; requires: 1 <= Dimension <= 9
+
+;; A Peg [position] is an Int
+;; requires: 11 <= Peg <= 99
+;;           neither digit can be zero or greater than the
+;;             Dimension (for the corresponding board)
+
+;; A Board is a (list Dimension (listof Peg))
+;; The list contains INVALID Peg positions
+
+;; A State is a (listof Peg)
+;; requires: list is non-emtpy
+;;           each Peg is VALID for the corresponding board
+
+;; A Solution is one of:
+;; * 'any
+;; * Peg
+
+;; Constants
+(define peg-sym #\O)
+(define unoccupied-sym #\.)
+(define invalid-sym #\space)
+(define no-solution-text (list (list "No Solution Found")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; this is the sample board from the assignment
+
+(define sample (list 4 (list 41 42 43 44)))
+#|
+....
+....
+....
+    
+|#
+
+(define sample/init (list 22 23))
+#|
+....
+.OO.
+....
+    
+|#
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; this is the traditional cross pattern with default init state cross/init
+;; with some additional (easier) init states you can use
+
+(define cross 
+  (list 7 (list 11 12 16 17 21 22 26 27 61 62 66 67 71 72 76 77)))
+#|
+  ...  
+  ...  
+.......
+.......
+.......
+  ...  
+  ...  
+|#
+
+(define cross/init (list 13 14 15 23 24 25 31 32 33 34 35 36 37 41 42 43
+                         45 46 47 51 52 53 54 55 56 57 63 64 65 73 74 75))
+#|
+  OOO  
+  OOO  
+OOOOOOO
+OOO.OOO
+OOOOOOO
+  OOO  
+  OOO  
+|#
+
+(define cross/submarine (list 34 42 43 44 45 46))
+#|
+  ...  
+  ...  
+...O...
+.OOOOO.
+.......
+  ...  
+  ...  
+|#
+
+(define cross/greek (list 24 34 42 43 44 45 46 54 64))
+#|
+  ...  
+  .O.  
+...O...
+.OOOOO.
+...O...
+  .O.  
+  ...  
+|#
+
+(define cross/small-diamond 
+  (list 24 33 34 35 42 43 45 46 53 54 55 64))
+#|
+  ...  
+  .O.  
+..OOO..
+.OO.OO.
+..OOO..
+  .O.  
+  ...  
+|#
+
+(define cross/big-diamond 
+  (list 14 23 24 25 32 33 34 35 36 41 42 43
+        45 46 47 52 53 54 55 56 63 64 65 74))
+#|
+  .O.  
+  OOO  
+.OOOOO.
+OOO.OOO
+.OOOOO.
+  OOO  
+  .O.  
+|#
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This is a provided function: no additional documentation required
+(define (make-neighbours board) 
+  (lambda (state) (neighbours board state)))
+
+;;********************************part a**************************************
+;; (build-board dim) produces a board of dim by dim with row containing
+;;   its peg positions.
+;; build-board: Dimension -> (listof (listof Peg))
+;; Examples:
+(check-expect (build-board 2) '((11 12)
+                                (21 22)))
+(check-expect (build-board 3) '((11 12 13)
+                                (21 22 23)
+                                (31 32 33)))
+
+(define (build-board dim)
+  (build-list dim (lambda (row) 
+                    (build-list dim (lambda (col) 
+                                      (+ (* (add1 row) 10) 
+                                         col 1))))))
+
+;; Tests:
+(check-expect (build-board 8) '((11 12 13 14 15 16 17 18)
+                                (21 22 23 24 25 26 27 28)
+                                (31 32 33 34 35 36 37 38)
+                                (41 42 43 44 45 46 47 48)
+                                (51 52 53 54 55 56 57 58)
+                                (61 62 63 64 65 66 67 68)
+                                (71 72 73 74 75 76 77 78)
+                                (81 82 83 84 85 86 87 88)))
+
+;;********************************part b**************************************
+;; (state->los board state) replaces every peg position in the Board
+;;   given by the dimensions in board with the corresponding characters 
+;;   according to board and state.
+;; state->los: Board State -> (listof String)
+;; Examples:
+(check-expect (state->los sample sample/init) 
+              '("...." 
+                ".OO." 
+                "...." 
+                "    "))
+(check-expect (state->los '(4 (11 14 41 44)) '(22 23 32 33)) 
+              '(" .. " 
+                ".OO." 
+                ".OO." 
+                " .. "))
+
+(define (state->los board state)
+  (map (lambda (row) 
+         (list->string 
+          (map (lambda (peg) 
+                 (cond
+                   [(and (list? (second board))
+                         (member? peg (second board))) invalid-sym]
+                   [(and (list? state) 
+                         (member? peg state)) peg-sym]
+                   [else unoccupied-sym])) row)))
+       (build-board (first board))))
+
+;; Tests
+(check-expect (state->los '(4 empty) empty) 
+              '("...." 
+                "...." 
+                "...." 
+                "...."))
+
+(check-expect (state->los '(4 (21 22 23 24 
+                                  31 32 33 34 
+                                  41 42 43 44)) '(11 12 13 14)) 
+              '("OOOO" 
+                "    " 
+                "    " 
+                "    "))
+
+;;********************************part c**************************************
+;; (make-solved? sol) produces a function that requires state and 
+;;   checks if state equals to sol.
+;; make-solved?: Solution -> (State -> Bool)
+;; Examples:
+(check-expect ((make-solved? 45) '(1)) false)
+(check-expect ((make-solved? 'any) '(1)) true)
+
+(define (make-solved? sol)
+  (lambda (state)
+    (cond
+      [(equal? state (list sol)) true]
+      [(symbol? sol) (= (length state) 1)]
+      [else false])))
+
+;; Tests:
+(define my-solved1? (make-solved? 45))
+(define my-solved2? (make-solved? 'any))
+(check-expect (my-solved2? empty) false)
+(check-expect (my-solved1? (list 44 45)) false)
+(check-expect (my-solved1? (list 44)) false)
+(check-expect (my-solved2? (list 45)) true)
+(check-expect (my-solved1? (list 45)) true)
+(check-expect (my-solved2? (list 44 45)) false)
+
+;;********************************part d**************************************
+;; (neighbours board state) produces a list of possible legal moves after
+;;   state given the properties from board.
+;; neighbours: Board State -> (listof State)
+;; Examples:
+(check-expect (neighbours sample '(22 23))
+              (list '(24) '(21)))
+(check-expect (neighbours '(4 empty) '(22 32))
+              (list '(42) '(12)))
+
+(define (neighbours board state)
+  (local
+    [(define dim (first board))
+     (define invalid-lst (second board))
+     ;; (next-states state dir peg) produces a list of states that
+     ;;   can occur after state given peg and dir.
+     ;; next-states: State Nat Peg -> (list State)
+     ;; requires: dir is one of -10 -1 1 10
+     (define (next-states state dir peg)
+       (local
+         [(define jump-over (+ peg dir))
+          (define new-peg (+ peg (* dir 2)))
+          ;; (can-jump? new-peg) checks if peg is legal.
+          ;; can-jump?: Peg -> Bool
+          (define (can-jump? new-peg)
+            (local
+              [(define r (quotient new-peg 10))
+               (define c (remainder new-peg 10))]
+              (and (< 0 r) (>= dim r)
+                   (< 0 c) (>= dim c) 
+                   (not (member? new-peg state))
+                   (not (and (list? invalid-lst)
+                             (member? new-peg invalid-lst)))
+                   (member? jump-over state))))]
+         (cond
+           [(can-jump? new-peg)
+            (list (quicksort 
+                   (cons new-peg 
+                         (remove jump-over (remove peg state))) 
+                   <))]
+           [else empty])))]
+    (foldr (lambda (peg rest-pegs) 
+             (append (next-states state -10 peg)
+                     (next-states state -1 peg)
+                     (next-states state 1 peg)
+                     (next-states state 10 peg)
+                     rest-pegs)) empty state)))
+
+;; Tests:
+(check-expect (neighbours '(4 (21 41 42 43 44)) sample/init)
+              (list '(24)))
+(check-expect (neighbours '(5 (11 12 13 14 15)) '(21 22 24))
+              (list '(23 24)))
+(check-expect (neighbours '(5 (11 12 13 14 15)) '(22))
+              empty)
+
+;;********************************part e**************************************
+;; (solitaire board state sol) produces step-by-step solution to get from state
+;;   to sol given the properties from board.
+;; solitaire: Board State Solution -> (oneof (listof State) false)
+;; Examples:
+(check-expect (solitaire sample '(21 22 24) 'any)
+              '((21 22 24) (23 24) (22)))
+(check-expect (solitaire sample '(21 22 24) 31)
+              false)
+
+(define (solitaire board state sol)
+  (find-route state (make-neighbours board) (make-solved? sol)))
+
+;; Tests:
+(check-expect (solitaire sample '(21 24) 'any)
+              false)
+(check-expect (solitaire '(4 ()) '(21) 31)
+              false)
+(check-expect (solitaire '(5 (11 12 13 14 15)) '(21 22 24) 'any)
+              '((21 22 24) (23 24) (25)))
+(check-expect (solitaire '(5 (11 12 13 14 15)) '(21 22 24) 22)
+              '((21 22 24) (23 24) (22)))
+(check-expect (solitaire '(3 ()) '(11 12) 'any)
+              (list '(11 12) '(13)))
+
+;;********************************part f**************************************
+;; (result->text board res) replaces every peg position in res with the 
+;;   corresponding characters according to board.
+;; result->text: Board (listof State) -> (listof Str)
+;; Examples:
+(check-expect (result->text sample '((21 22 24) (23 24) (22)))
+              (list '("...."
+                      "OO.O"
+                      "...."
+                      "    ")
+                    '("...."
+                      "..OO"
+                      "...."
+                      "    ")
+                    '("...."
+                      ".O.."
+                      "...."
+                      "    ")))
+(check-expect (result->text sample false)
+              no-solution-text)
+
+(define (result->text board res)
+  (cond
+    [(false? res) no-solution-text]
+    [else (map (lambda (x) 
+                 (state->los board x)) res)]))
+
+;; Tests:
+(check-expect (result->text '(5 (11 12 13 14 15)) 
+                            '((21 22 24) (23 24) (25)))
+              (list '("     "
+                      "OO.O."
+                      "....."
+                      "....."
+                      ".....")
+                    '("     "
+                      "..OO."
+                      "....."
+                      "....."
+                      ".....")
+                    '("     "
+                      "....O"
+                      "....."
+                      "....."
+                      ".....")))
+(check-expect (result->text '(3 ()) (list '(11 12) '(13)))
+              (list '("OO."
+                      "..."
+                      "...")
+                    '("..O"
+                      "..."
+                      "...")))
