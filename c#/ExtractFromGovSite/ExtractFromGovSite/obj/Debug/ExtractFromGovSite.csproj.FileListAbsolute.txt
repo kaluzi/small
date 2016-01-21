@@ -1,0 +1,9 @@
+c:\users\klu\documents\visual studio 2013\Projects\ExtractFromGovSite\ExtractFromGovSite\bin\Debug\ExtractFromGovSite.exe.config
+c:\users\klu\documents\visual studio 2013\Projects\ExtractFromGovSite\ExtractFromGovSite\bin\Debug\ExtractFromGovSite.exe
+c:\users\klu\documents\visual studio 2013\Projects\ExtractFromGovSite\ExtractFromGovSite\bin\Debug\ExtractFromGovSite.pdb
+c:\users\klu\documents\visual studio 2013\Projects\ExtractFromGovSite\ExtractFromGovSite\obj\Debug\ExtractFromGovSite.csprojResolveAssemblyReference.cache
+c:\users\klu\documents\visual studio 2013\Projects\ExtractFromGovSite\ExtractFromGovSite\obj\Debug\ExtractFromGovSite.Extraction.resources
+c:\users\klu\documents\visual studio 2013\Projects\ExtractFromGovSite\ExtractFromGovSite\obj\Debug\ExtractFromGovSite.Properties.Resources.resources
+c:\users\klu\documents\visual studio 2013\Projects\ExtractFromGovSite\ExtractFromGovSite\obj\Debug\ExtractFromGovSite.csproj.GenerateResource.Cache
+c:\users\klu\documents\visual studio 2013\Projects\ExtractFromGovSite\ExtractFromGovSite\obj\Debug\ExtractFromGovSite.exe
+c:\users\klu\documents\visual studio 2013\Projects\ExtractFromGovSite\ExtractFromGovSite\obj\Debug\ExtractFromGovSite.pdb
